@@ -131,10 +131,11 @@ const article = await db.get(
 - **Remédiation :**
     - Lire le secret depuis `process.env.SESSION_SECRET`
     - Configurer les cookies :
-      ```ts
-      cookie: { httpOnly: true, secure: true, sameSite: 'strict' }
-      ```
-    - Utiliser `req.session.regenerate()` après authentification et `req.session.destroy()` au logout
+  ```ts
+        cookie: { httpOnly: true, secure: true, sameSite: 'strict' }
+  ```
+    
+  - Utiliser `req.session.regenerate()` après authentification et `req.session.destroy()` au logout
 
 ---
 
@@ -210,32 +211,32 @@ export async function remove(req: Request, res: Response): Promise<any> {
 ![broken_acces_control_delete.png](screenshots/broken_acces_control_delete.png)
 
 - **Cause :**
-- `GET /api/articles/all` accessible à tout utilisateur authentifié.
-- `PUT` et `DELETE /api/articles/:id` ne vérifient pas l'auteur.
+    - `GET /api/articles/all` accessible à tout utilisateur authentifié.
+    - `PUT` et `DELETE /api/articles/:id` ne vérifient pas l'auteur.
 
-**Correctifs**
-- Restreindre `/all` aux administrateurs en ajoutant le middleware `roleRequired`:
-```ts
-  router.get('/all', roleRequired('admin'), listAll);
-   ```
-- Vérifier `authorId` avant modification ou suppression.
+- **Correctifs**
+    - Restreindre `/all` aux administrateurs en ajoutant le middleware `roleRequired`:
+  ```ts
+    router.get('/all', roleRequired('admin'), listAll);
+  ```
+    - Vérifier `authorId` avant modification ou suppression.
 
-```ts
-export async function remove(req: Request, res: Response): Promise<any> {
-const userId = req.session.user!.id;
-const articleId = req.params.id;
-const result = await db.run(
-'DELETE FROM articles WHERE id=? AND authorId=?',
-articleId,
-userId
-);
-
-if (result.changes === 0) {
-return res.status(403).json({ error: 'Something went wrong' });
-}
-res.json({ message: 'Deleted' });
-}
-```
+  ```ts
+  export async function remove(req: Request, res: Response): Promise<any> {
+  const userId = req.session.user!.id;
+  const articleId = req.params.id;
+  const result = await db.run(
+  'DELETE FROM articles WHERE id=? AND authorId=?',
+  articleId,
+  userId
+  );
+  
+  if (result.changes === 0) {
+  return res.status(403).json({ error: 'Something went wrong' });
+  }
+  res.json({ message: 'Deleted' });
+  }
+  ```
 
 ---
 
@@ -300,38 +301,39 @@ res.json({ message: 'Deleted' });
 
 - **Localisation** :
 
-`frontend/src/views/Home.vue` et `frontend/src/views/Article.vue`
+  `frontend/src/views/Home.vue` et `frontend/src/views/Article.vue`
 
 - **Preuve de concept :**
-- Si on visite `http://localhost:8080/?search=<img src=x onerror=alert(1)>`, l'image est chargée et le script s'exécute.
+    - Si on visite `http://localhost:8080/?search=<img src=x onerror=alert(1)>`, l'image est chargée et le script s'exécute.
 
-![xss_reflected.png](screenshots/xss_reflected.png)
+  ![xss_reflected.png](screenshots/xss_reflected.png)
 
-- Si on crée un article avec `<img src="x" onerror="alert('XSS')">`, le script s'exécute lors de la visualisation de l'article.
+    - Si on crée un article avec `<img src="x" onerror="alert('XSS')">`, le script s'exécute lors de la visualisation de l'article.
 
-![xss_stored.png](screenshots/xss_stored.png)
+  ![xss_stored.png](screenshots/xss_stored.png)
 
 - **Cause :**
-- Résultats de la recherche `Home.vue` utilise `v-html` sur les paramètres de la recherche, authorisant le XSS à la volée.
-- Le contenu de l'article est rendu avec `v-html`, authorisant le XSS stocké.
+    - Résultats de la recherche `Home.vue` utilise `v-html` sur les paramètres de la recherche, authorisant le XSS à la volée.
+    - Le contenu de l'article est rendu avec `v-html`, authorisant le XSS stocké.
 
-**Correctifs**
-- Utiliser une bibliothèque comme `DOMPurify` pour nettoyer le contenu avant de l'afficher.
+- **Correctifs**
+    - Utiliser une bibliothèque comme `DOMPurify` pour nettoyer le contenu avant de l'afficher.
+    - Exemple de correction dans `Home.vue` :
+  ```ts
+  const searchQueryRaw = computed(() => {
+    const s = route.query.search
+    return typeof s === 'string' ? DOMPurify.sanitize(s) : ''
+  })
+  ```
 
-- Exemple de correction dans `Home.vue` :
-```ts
-const searchQueryRaw = computed(() => {
-  const s = route.query.search
-  return typeof s === 'string' ? DOMPurify.sanitize(s) : ''
-})
-```
-- Exemple de correction dans `Article.vue` :
-```ts
-safeContent = DOMPurify.sanitize(article.value.content)
-```
-```html
-    <p v-html="safeContent"></p>
-```
+    - Exemple de correction dans `Article.vue` :
+
+  ```ts
+  safeContent = DOMPurify.sanitize(article.value.content)
+  ```
+  ```html
+      <p v-html="safeContent"></p>
+  ```
 
 ---
 
@@ -441,67 +443,67 @@ safeContent = DOMPurify.sanitize(article.value.content)
 ### 3.9. Force Brute
 
 - **Localisation :**
-- Le router `auth.ts` sur la route login : `router.post('/login', login);`
+    - Le router `auth.ts` sur la route login : `router.post('/login', login);`
 
 - **Preuve de concept :**
     1. Lancer Postman et envoyer plusieurs requêtes avec des identifiants incorrects.
     2. L’application ne limite pas le nombre de tentatives de connexion.
 
 - **Cause :**
-- Aucune limitation du nombre de tentatives de connexion, permettant une attaque par force brute.
+    - Aucune limitation du nombre de tentatives de connexion, permettant une attaque par force brute.
 
 - **Remédiation :**
     - Ajouter un middleware pour limiter les tentatives de connexion, par exemple avec `express-rate-limit` :
-```ts
-const loginLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 5, // max 5 tentatives par IP
-    message: {
-        error: 'Trop de tentatives. Réessayez dans 15 minutes.'
-    },
-    standardHeaders: true,
-    legacyHeaders: false,
-});
-router.post('/login', loginLimiter, login);
-```
+  ```ts
+  const loginLimiter = rateLimit({
+      windowMs: 15 * 60 * 1000, // 15 minutes
+      max: 5, // max 5 tentatives par IP
+      message: {
+          error: 'Trop de tentatives. Réessayez dans 15 minutes.'
+      },
+      standardHeaders: true,
+      legacyHeaders: false,
+  });
+  router.post('/login', loginLimiter, login);
+  ```
 ### 3.10. Broken Access Control
 
 - **Localisation :** 
-- Dans le router frontend /`src/router/index.ts` :
-```ts
-const routes = [
-  // ... autres routes ...
-    {
-        path: '/admin',
-        name: 'Admin',
-        component: Admin,
-        meta: {requiresAuth: true}
-    }
-]
-```
+    - Dans le router frontend /`src/router/index.ts` :
+  ```ts
+  const routes = [
+    // ... autres routes ...
+      {
+          path: '/admin',
+          name: 'Admin',
+          component: Admin,
+          meta: {requiresAuth: true}
+      }
+  ]
+  ```
 
 - **Preuve de concept :**
     1. Se connecter en tant qu'utilisateur normal.
     2. Accéder à `/admin` : l'accès est autorisé sans vérification du rôle.
 
-![broken_acces_control_admin.png](screenshots/broken_acces_control_admin.png)
+  ![broken_acces_control_admin.png](screenshots/broken_acces_control_admin.png)
 
 - **Cause :**
     - Le routeur frontend ne vérifie pas le rôle de l'utilisateur avant d'accéder à la route `/admin`.
 
 - **Remédiation :**
-- Ajouter une vérification du rôle dans le routeur :
-```ts
-const routes = [
-  // ... autres routes ...
-  {
-    path: '/admin',
-    name: 'Admin',
-    component: Admin,
-    meta: { 
-      requiresAuth: true,
-      onlyAdmin: true
+    - Ajouter une vérification du rôle dans le routeur :
+  ```ts
+  const routes = [
+    // ... autres routes ...
+    {
+      path: '/admin',
+      name: 'Admin',
+      component: Admin,
+      meta: { 
+        requiresAuth: true,
+        onlyAdmin: true
+      }
     }
-  }
-]
-```
+  ]
+  ```
