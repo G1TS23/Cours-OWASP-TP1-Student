@@ -81,6 +81,11 @@ export async function exportData(req: Request, res: Response): Promise<any> {
         return res.sendStatus(400)
     }
 
+    const allowedHosts = ['https://mon-service.com'];
+    if (!allowedHosts.some(h => sendTo.startsWith(h))) {
+        return res.status(400).json({ error: 'Forbidden target' });
+    }
+
 
     const userId = req.session.user!.id;
     let articles = await db.all('SELECT * FROM articles WHERE authorId = ?', userId);

