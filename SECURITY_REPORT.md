@@ -386,3 +386,30 @@ safeContent = DOMPurify.sanitize(article.value.content)
 ---
 
 ### 3.8. Server‑Side Request Forgery (SSRF)
+
+### 3.9. Force Brute
+
+- **Localisation :**
+- Le router `auth.ts` sur la route login : `router.post('/login', login);`
+
+- **Preuve de concept :**
+    1. Lancer Postman et envoyer plusieurs requêtes avec des identifiants incorrects.
+    2. L’application ne limite pas le nombre de tentatives de connexion.
+
+- **Cause :**
+- Aucune limitation du nombre de tentatives de connexion, permettant une attaque par force brute.
+
+- **Remédiation :**
+    - Ajouter un middleware pour limiter les tentatives de connexion, par exemple avec `express-rate-limit` :
+```ts
+const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 5, // max 5 tentatives par IP
+    message: {
+        error: 'Trop de tentatives. Réessayez dans 15 minutes.'
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+router.post('/login', loginLimiter, login);
+```
