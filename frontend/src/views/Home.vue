@@ -36,6 +36,7 @@ import { user } from '../store/user'
 import api from '../services/api';
 import { ref, computed, watch, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import DOMPurify from "dompurify";
 
 const articles = ref([])
 const searchTerm = ref('')
@@ -48,7 +49,7 @@ const router = useRouter()
 
 const searchQueryRaw = computed(() => {
   const s = route.query.search
-  return typeof s === 'string' ? s : ''
+  return typeof s === 'string' ? DOMPurify.sanitize(s) : ''
 })
 
 const filteredArticles = computed(() => {
