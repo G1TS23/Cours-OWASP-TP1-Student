@@ -122,7 +122,7 @@ const article = await db.get(
        valeur est identique.
     2. Absence de sécurité : le cookie n’ayant pas le flag secure, il transite en clair en HTTP (mode dev).
 
-![cookie-no-change-and-no-secure.png](screenshoots/cookie-no-change-and-no-secure.png)
+![cookie-no-change-and-no-secure.png](screenshots/cookie-no-change-and-no-secure.png)
 
 - **Cause :**
     - Le secret de session est codé en dur et aucune option de cookie
@@ -149,14 +149,14 @@ const article = await db.get(
     { username: 'admin',  password: 'H3qWu6w1Nzkm', role: 'admin' },
   ```
 
-![mot-de-passe-no-hash.png](screenshoots/mot-de-passe-no-hash.png)
+![mot-de-passe-no-hash.png](screenshots/mot-de-passe-no-hash.png)
 
   ```ts
   if (!user) return res.status(401).json({error: 'User not exist'});
 if (user.password !== password) return res.status(401).json({error: 'Invalid password'});
   ```
 
-![erreurs-explicites.png](screenshoots/erreurs-explicites.png)
+![erreurs-explicites.png](screenshots/erreurs-explicites.png)
 
 - **Preuve de concept :**
     1. Lancer npm run setup puis ouvrir data/database.db : la table users contient des mots de passe en clair.
@@ -357,7 +357,7 @@ safeContent = DOMPurify.sanitize(article.value.content)
     2. Lancer le fichier [evil.html](evil.html) sur le navigateur (CORS allégés avec le bon port qui va bien)
     3. On observe que le script s'exécute bien et fait un POST avec un cookie qui n'est pas strict.
 
-![cookie-samesite-no.png](screenshoots/cookie-samesite-no.png)
+![cookie-samesite-no.png](screenshots/cookie-samesite-no.png)
 
 - **Cause :**
     - Pas de flag SameSite ni mécanisme de jeton CSRF. Aucune route ne vérifie de token CSRF. Ainsi, une requête
