@@ -128,3 +128,39 @@ res.json({ message: 'Deleted' });
 }
 ```
 
+### 3.6. Cross-Site Scripting (XSS)
+
+- **Localisation** :
+
+`frontend/src/views/Home.vue` et `frontend/src/views/Article.vue`
+
+- **Preuve de concept :**
+- Si on visite `http://localhost:8080/?search=<img src=x onerror=alert(1)>`, l'image est chargée et le script s'exécute.
+
+![xss_reflected.png](screenshots/xss_reflected.png)
+
+- Si on crée un article avec `<img src="x" onerror="alert('XSS')">`, le script s'exécute lors de la visualisation de l'article.
+
+![xss_stored.png](screenshots/xss_stored.png)
+
+- **Cause :**
+- Résultats de la recherche `Home.vue` utilise `v-html` sur les paramètres de la recherche, authorisant le XSS à la volée.
+- Le contenu de l'article est rendu avec `v-html`, authorisant le XSS stocké.
+
+**Correctifs**
+- Utiliser une bibliothèque comme `DOMPurify` pour nettoyer le contenu avant de l'afficher.
+
+- Exemple de correction dans `Home.vue` :
+```ts
+const searchQueryRaw = computed(() => {
+  const s = route.query.search
+  return typeof s === 'string' ? DOMPurify.sanitize(s) : ''
+})
+```
+- Exemple de correction dans `Article.vue` :
+```ts
+safeContent = DOMPurify.sanitize(article.value.content)
+```
+```html
+    <p v-html="safeContent"></p>
+```
