@@ -61,23 +61,6 @@ async function main() {
     }
   }));
 
-  app.use(csurf({
-    cookie: {
-      sameSite: 'strict',
-      secure: process.env.NODE_ENV === 'production',
-      httpOnly: true
-    }
-  }));
-
-  app.use((req, res, next) => {
-    res.cookie('XSRF-TOKEN', req.csrfToken(), {
-      sameSite: 'strict',
-      secure: process.env.NODE_ENV === 'production',
-      httpOnly: false
-    });
-    next();
-  });
-
   app.use(express.json());
   app.use('/api/auth', authRoutes);
   app.use('/api/articles', articleRoutes);
