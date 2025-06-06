@@ -413,3 +413,44 @@ const loginLimiter = rateLimit({
 });
 router.post('/login', loginLimiter, login);
 ```
+### 3.10. Broken Access Control
+
+- **Localisation :** 
+- Dans le router frontend /`src/router/index.ts` :
+```ts
+const routes = [
+  // ... autres routes ...
+    {
+        path: '/admin',
+        name: 'Admin',
+        component: Admin,
+        meta: {requiresAuth: true}
+    }
+]
+```
+
+- **Preuve de concept :**
+    1. Se connecter en tant qu'utilisateur normal.
+    2. Accéder à `/admin` : l'accès est autorisé sans vérification du rôle.
+
+![broken_acces_control_admin.png](screenshots/broken_acces_control_admin.png)
+
+- **Cause :**
+    - Le routeur frontend ne vérifie pas le rôle de l'utilisateur avant d'accéder à la route `/admin`.
+
+- **Remédiation :**
+- Ajouter une vérification du rôle dans le routeur :
+```ts
+const routes = [
+  // ... autres routes ...
+  {
+    path: '/admin',
+    name: 'Admin',
+    component: Admin,
+    meta: { 
+      requiresAuth: true,
+      onlyAdmin: true
+    }
+  }
+]
+```
