@@ -437,3 +437,71 @@ safeContent = DOMPurify.sanitize(article.value.content)
   return res.status(400).json({ error: 'Forbidden target' });
   }
    ```
+
+### 3.9. Force Brute
+
+- **Localisation :**
+- Le router `auth.ts` sur la route login : `router.post('/login', login);`
+
+- **Preuve de concept :**
+    1. Lancer Postman et envoyer plusieurs requêtes avec des identifiants incorrects.
+    2. L’application ne limite pas le nombre de tentatives de connexion.
+
+- **Cause :**
+- Aucune limitation du nombre de tentatives de connexion, permettant une attaque par force brute.
+
+- **Remédiation :**
+    - Ajouter un middleware pour limiter les tentatives de connexion, par exemple avec `express-rate-limit` :
+```ts
+const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 5, // max 5 tentatives par IP
+    message: {
+        error: 'Trop de tentatives. Réessayez dans 15 minutes.'
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+router.post('/login', loginLimiter, login);
+```
+### 3.10. Broken Access Control
+
+- **Localisation :** 
+- Dans le router frontend /`src/router/index.ts` :
+```ts
+const routes = [
+  // ... autres routes ...
+    {
+        path: '/admin',
+        name: 'Admin',
+        component: Admin,
+        meta: {requiresAuth: true}
+    }
+]
+```
+
+- **Preuve de concept :**
+    1. Se connecter en tant qu'utilisateur normal.
+    2. Accéder à `/admin` : l'accès est autorisé sans vérification du rôle.
+
+![broken_acces_control_admin.png](screenshots/broken_acces_control_admin.png)
+
+- **Cause :**
+    - Le routeur frontend ne vérifie pas le rôle de l'utilisateur avant d'accéder à la route `/admin`.
+
+- **Remédiation :**
+- Ajouter une vérification du rôle dans le routeur :
+```ts
+const routes = [
+  // ... autres routes ...
+  {
+    path: '/admin',
+    name: 'Admin',
+    component: Admin,
+    meta: { 
+      requiresAuth: true,
+      onlyAdmin: true
+    }
+  }
+]
+```
