@@ -7,7 +7,7 @@
     "build": "vue-cli-service build"
   },
   "dependencies": {
-    "axios": "^1.9.0",
+    "axios": "^1.20.0",
     "dompurify": "^3.4.16",
     "tpv2": "file:..",
     "vue": "^3.2.13",
